@@ -6,7 +6,6 @@ const verifyToken = require('../middleware/auth');
 const User = require('../models/User');
 const Family = require('../models/Family');
 
-// Create Family + Generate Invite Code
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { name } = req.body;
@@ -17,7 +16,7 @@ router.post('/', verifyToken, async (req, res) => {
 
     const family = new Family({
       name,
-      creator: req.user._id,
+      creator: req.user._id,  // ← from middleware
       members: [req.user._id],
       inviteCodes: [{ code, expiresAt }]
     });
@@ -28,6 +27,7 @@ router.post('/', verifyToken, async (req, res) => {
 
     res.json({ family, inviteCode: code });
   } catch (err) {
+    console.error('Create family error:', err);
     res.status(500).json({ error: err.message });
   }
 });
