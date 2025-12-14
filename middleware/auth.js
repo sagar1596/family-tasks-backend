@@ -1,11 +1,10 @@
 // middleware/auth.js
 const admin = require('firebase-admin');
-const User = require('../models/User');
 
-const serviceAccount = require('../serviceAccountKey.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// Use Application Default Credentials (ADC) – works on Render.com
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -18,6 +17,7 @@ const verifyToken = async (req, res, next) => {
     const decoded = await admin.auth().verifyIdToken(token);
 
     // Find or create user in MongoDB
+    const User = require('../models/User');
     let user = await User.findOne({ firebaseUid: decoded.uid });
     if (!user) {
       user = new User({
@@ -27,9 +27,10 @@ const verifyToken = async (req, res, next) => {
       await user.save();
     }
 
-    req.user = user; // ← this has _id
+    req.user = user;
     next();
   } catch (e) {
+    console.error('Token verification error:', e);
     res.status(401).json({ msg: 'Invalid token' });
   }
 };
